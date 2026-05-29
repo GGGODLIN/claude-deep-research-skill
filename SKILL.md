@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: Use when the user needs multi-source research with citation tracking, evidence persistence, and structured report generation. Triggers on "deep research", "comprehensive analysis", "research report", "compare X vs Y", "analyze trends", or "state of the art". Not for simple lookups, debugging, or questions answerable with 1-2 searches.
+description: 多源驗證 + citation 追蹤 + 結構化研究報告的深度研究 skill。中文觸發：「深度研究 X」「深入研究 X」「完整分析 X」「幫我研究一下 X」「X 的現況 / 趨勢 / 全貌」「研究報告」「比較 X 跟 Y」「X vs Y 全面評估」「X 選哪個」「X 怎麼選」「整理一下 X 的 landscape」。英文觸發：「deep research」「comprehensive analysis」「research report」「compare X vs Y」「analyze trends」「state of the art」。不要用在：簡單查詢、debug、一兩次搜尋就答得出的事實題（交給 research-before-answer 或一般 WebSearch）。
 ---
 
 # Deep Research
@@ -21,7 +21,12 @@ Request Analysis
 +-- Debugging? --> STOP: Use standard tools
 +-- Complex analysis needed? --> CONTINUE
 
-Mode Selection
+Engine Routing (ASK EVERY TIME -- see "Engine Routing" section below)
++-- 本 skill 管線 --> Mode Selection (below)
++-- 官方 built-in workflow --> Workflow({name:"deep-research"}); skill 不往下
++-- 平行對照 --> 背景官方 workflow + 前景本 skill 管線
+
+Mode Selection (only when "本 skill 管線" is chosen)
 +-- Initial exploration --> quick (3 phases, 2-5 min)
 +-- Standard research --> standard (6 phases, 5-10 min) [DEFAULT]
 +-- Critical decision --> deep (8 phases, 10-20 min)
@@ -29,6 +34,23 @@ Mode Selection
 ```
 
 **Default assumptions:** Technical query = technical audience. Comparison = balanced perspective. Trend = recent 1-2 years.
+
+---
+
+## Engine Routing (ask every time)
+
+After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. Use the `AskUserQuestion` tool, single-select, with these three options (繁中 labels shown to the user):
+
+1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
+2. **官方 built-in workflow** — call `Workflow({name:"deep-research", args:"<topic> — 請以繁體中文輸出報告"})`。8-agent 真並行，快、廣度足、對抗式驗證。⚠️ args 必須註明繁中，否則官方那支預設吐英文。
+3. **平行對照** — 背景起官方 workflow + 前景同時跑本 skill 管線，兩邊都回來後並排對照發現與品質差異。花雙倍 token，適合重要題目或評估期。
+
+**Routing after the answer:**
+- 本 skill 管線 → proceed to Mode Selection and the 8-phase workflow below.
+- 官方 built-in workflow → invoke the Workflow tool; this skill's pipeline is NOT run. Relay the workflow's cited findings.
+- 平行對照 → start the official workflow in the background, run this skill's pipeline in the foreground, then present a side-by-side comparison.
+
+**Only exception to asking:** the current request already names an engine explicitly (e.g. 「用官方 workflow 跑」「用 skill 出 PDF 報告」「平行跑」) — honor it directly without re-asking.
 
 ---
 

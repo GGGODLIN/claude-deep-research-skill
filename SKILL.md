@@ -21,10 +21,13 @@ Request Analysis
 +-- Debugging? --> STOP: Use standard tools
 +-- Complex analysis needed? --> CONTINUE
 
+Pre-scout Gate (see "Pre-scout Gate" section below)
+(skip 此 gate 直接 dispatch engine 是常見誤用 — 多半燒了一輪才發現 source 爛掉)
+
 Engine Routing (ASK EVERY TIME -- see "Engine Routing" section below)
 +-- 本 skill 管線 --> Mode Selection (below)
-+-- 官方 built-in workflow --> Workflow({name:"deep-research"}); skill 不往下
-+-- 平行對照 --> 背景官方 workflow + 前景本 skill 管線
++-- 官方 workflow（限流版）--> Workflow({name:"deep-research-paced"}); skill 不往下
++-- 平行對照 --> 背景官方 workflow（限流版）+ 前景本 skill 管線
 
 Mode Selection (only when "本 skill 管線" is chosen)
 +-- Initial exploration --> quick (3 phases, 2-5 min)
@@ -37,20 +40,56 @@ Mode Selection (only when "本 skill 管線" is chosen)
 
 ---
 
+## Pre-scout Gate
+
+Engine routing cold-starts: it doesn't see the user's existing memory clusters, wiki pointers, or prior `runs/` reports. Most deep-research invocations are補洞, not first-time exploration — half the relevant sources are already named somewhere in the user's brain. Five minutes of main-session scout wires those into the URL pool the engine will inherit, AND surfaces dead sources (302/404/login-wall/JS-only) that engine fetch agents silently abstain on.
+
+F22 2026-06-15: three batches × 5.4M tokens each silently abstained on `platform.xiaomimimo.com` because nobody followed the 302 to `mimo.mi.com` — main session direct WebFetch caught it in 30 seconds. The workflow-side discipline that pairs with this scout is `workflow-hardening` §9 (source-health).
+
+**Scout has high ROI when:**
+
+- A reference wiki / memory cluster names candidate sources (e.g. `_index_cc_model_swap` → vendor primary URLs)
+- The topic decomposes into N enumerable candidates (vendor docs, repos, papers)
+- 補洞 a previously-researched topic — every reflow after first is scout-first
+
+**Scout has low ROI / skip when:**
+
+- Concept question with no fetchable source (architecture / design pattern thinking, abstract design questions)
+- Cold-start truly nothing in memory / wiki / prior runs to hint sources — but consider: a 5-min scout that returns 0 sources is also useful (confirms cold-start status before engine cold-starts)
+
+**Scout steps (~5 min, main session):**
+
+1. Pull source candidates from `~/.claude/memory/_index_*.md`, wiki pointers, prior `runs/` reports
+2. Parallel WebFetch each landing page — log 302 redirects (follow them), 404s, login walls, suspiciously short renders
+3. Skim each live page — note what's trivially extractable now vs what needs verification / contention work
+
+**Gate B (after scout, decide before Engine Routing):**
+
+- **Skip engine** — scout already covers what's needed → main-session integration directly
+  ⚠️ Skip 等於放棄 3-vote adversarial verify。Vendor primary 不 verify 就會吞 cherry-pick (例：vendor 跨家比較表常用前代對照模糊現役落差)。若題目對 vendor 行銷誇大敏感、改選 narrow engine run 把可疑數字丟去 verify、別 skip。
+- **Narrow engine run** — scout covers most, gaps need verify or cross-source contention → engine runs only on gap axes, inherits scouted URLs
+- **Full engine run** — true cold-start or large unknown surface → engine runs angle decomposition from scratch
+
+**完成 Scout + Gate B 後 → Engine Routing (next section)**
+
+---
+
 ## Engine Routing (ask every time)
+
+(Reached this section only after Pre-scout Gate passed and Gate B chose "narrow" or "full". If Gate B chose "skip", this whole section is bypassed.)
 
 After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. Use the `AskUserQuestion` tool, single-select, with these three options (繁中 labels shown to the user):
 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
-2. **官方 built-in workflow** — call `Workflow({name:"deep-research", args:"<topic> — 請以繁體中文輸出報告"})`。8-agent 真並行，快、廣度足、對抗式驗證。⚠️ args 必須註明繁中，否則官方那支預設吐英文。
-3. **平行對照** — 背景起官方 workflow + 前景同時跑本 skill 管線，兩邊都回來後並排對照發現與品質差異。花雙倍 token，適合重要題目或評估期。
+2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比原版慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。若要不限流的原版（非 Opus 端點較快；但 **Opus 端點會撞 burst 限流、findings 拿半套**）→ 使用者明說「用官方原版跑」才改走 `Workflow({name:"deep-research"})`。
+3. **平行對照** — 背景起官方 workflow（限流版 `deep-research-paced`）+ 前景同時跑本 skill 管線，兩邊都回來後並排對照發現與品質差異。花雙倍 token，適合重要題目或評估期。
 
 **Routing after the answer:**
 - 本 skill 管線 → proceed to Mode Selection and the 8-phase workflow below.
-- 官方 built-in workflow → invoke the Workflow tool; this skill's pipeline is NOT run. Relay the workflow's cited findings.
-- 平行對照 → start the official workflow in the background, run this skill's pipeline in the foreground, then present a side-by-side comparison.
+- 官方 workflow（限流版）→ invoke `Workflow({name:"deep-research-paced"})`; this skill's pipeline is NOT run. Relay the workflow's cited findings.（僅當使用者明說「用官方原版跑」時改 `name:"deep-research"`）
+- 平行對照 → start the official paced workflow (`deep-research-paced`) in the background, run this skill's pipeline in the foreground, then present a side-by-side comparison.
 
-**Only exception to asking:** the current request already names an engine explicitly (e.g. 「用官方 workflow 跑」「用 skill 出 PDF 報告」「平行跑」) — honor it directly without re-asking.
+**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」= 平行對照。
 
 ---
 

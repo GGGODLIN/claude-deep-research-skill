@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: 多源驗證 + citation 追蹤 + 結構化研究報告的深度研究 skill。中文觸發：「深度研究 X」「深入研究 X」「完整分析 X」「幫我研究一下 X」「X 的現況 / 趨勢 / 全貌」「研究報告」「比較 X 跟 Y」「X vs Y 全面評估」「X 選哪個」「X 怎麼選」「整理一下 X 的 landscape」。英文觸發：「deep research」「comprehensive analysis」「research report」「compare X vs Y」「analyze trends」「state of the art」。不要用在：簡單查詢、debug、一兩次搜尋就答得出的事實題（交給 research-before-answer 或一般 WebSearch）。
+description: 多源驗證 + citation 追蹤 + 結構化研究報告的深度研究 skill。觸發：「深度研究 / 深入研究 / 完整分析 X」「研究報告」「比較 X 跟 Y / X vs Y / X 怎麼選」「X 的現況 / 趨勢 / landscape」；英文 deep research / comprehensive analysis / research report。不要用在：簡單查詢、debug、一兩次搜尋就答得出的事實題（交 research-before-answer）。
 ---
 
 # Deep Research
@@ -63,6 +63,21 @@ F22 2026-06-15: three batches × 5.4M tokens each silently abstained on `platfor
 2. Parallel WebFetch each landing page — log 302 redirects (follow them), 404s, login walls, suspiciously short renders
 3. Skim each live page — note what's trivially extractable now vs what needs verification / contention work
 
+**🔬 Trial 期增補：perspective sub-scout (2026-07-11 review · storm-perspective-graft)**
+
+源自 stanford-oval/storm Perspective-Guided Question Asking 概念，trial 評估能否解「題目沒定義清楚 / scope 過大 / 結果發散」痛點。跟上面 URL pool scout 並行跑、不互斥。
+
+Steps（main session 跑，scout 階段同時做）:
+
+1. 找 3-5 個對位 artifact（GitHub awesome list / 既有 landscape post / 同類 wiki entry / Sequoia/Latent Space 之類 market map）
+2. 觀察這幾篇共用哪些 perspective 軸（產品形態 / autonomy 軸 / 商業模式 / 對手 / 目標用戶 之類）
+3. 抽 4-7 個 perspective set，給 user 點頭再進 Engine Routing
+4. Perspective set 作 Engine routing args 的補強——`deep-research-paced` 的 angle decomposition 依 perspective set 分軸
+
+低信心 fallback：找不到 ≥3 對位 artifact → 標「⚠️ 低信心 perspective set」並 fallback 讓 LLM 自己想；user 可選 skip。
+
+Promote/Kill 條件詳見 `~/Desktop/projects/.claude/trials/active.md` storm-perspective-graft entry。
+
 **Gate B (after scout, decide before Engine Routing):**
 
 - **Skip engine** — scout already covers what's needed → main-session integration directly
@@ -78,7 +93,7 @@ F22 2026-06-15: three batches × 5.4M tokens each silently abstained on `platfor
 
 (Reached this section only after Pre-scout Gate passed and Gate B chose "narrow" or "full". If Gate B chose "skip", this whole section is bypassed.)
 
-After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. Use the `AskUserQuestion` tool, single-select, with these three options (繁中 labels shown to the user):
+After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. List the three options as inline text in the response, then end the turn and wait for the answer — single-select (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
 2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比原版慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。若要不限流的原版（非 Opus 端點較快；但 **Opus 端點會撞 burst 限流、findings 拿半套**）→ 使用者明說「用官方原版跑」才改走 `Workflow({name:"deep-research"})`。

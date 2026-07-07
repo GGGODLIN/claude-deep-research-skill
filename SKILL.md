@@ -93,18 +93,20 @@ Promote/Kill 條件詳見 `~/Desktop/projects/.claude/trials/active.md` storm-pe
 
 (Reached this section only after Pre-scout Gate passed and Gate B chose "narrow" or "full". If Gate B chose "skip", this whole section is bypassed.)
 
-After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. List the three options as inline text in the response, then end the turn and wait for the answer — single-select (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
+After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. List the four options as inline text in the response, then end the turn and wait for the answer — single-select (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
 2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比原版慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。若要不限流的原版（非 Opus 端點較快；但 **Opus 端點會撞 burst 限流、findings 拿半套**）→ 使用者明說「用官方原版跑」才改走 `Workflow({name:"deep-research"})`。
 3. **平行對照** — 背景起官方 workflow（限流版 `deep-research-paced`）+ 前景同時跑本 skill 管線，兩邊都回來後並排對照發現與品質差異。花雙倍 token，適合重要題目或評估期。
+4. **遞迴深挖（🔬 trial 至 2026-07-15）** — invoke `Skill(recursive-research)`：單線遞迴路線，每輪挑覆蓋最薄的子題往下鑽、來源自動分級、每輪磁碟 checkpoint 可跨 session `--resume`。與 1-3 的並行展開架構相反，適合「一個題目要鑽很深」而非「一個題目要鋪很廣」。⚠️ SKILL.md 本文是西班牙文，invoke 時 args 必須明寫「以繁體中文輸出」。trial 期間選了它請順手記錄體感（active.md recursive-research entry），review 時決定去留。
 
 **Routing after the answer:**
 - 本 skill 管線 → proceed to Mode Selection and the 8-phase workflow below.
 - 官方 workflow（限流版）→ invoke `Workflow({name:"deep-research-paced"})`; this skill's pipeline is NOT run. Relay the workflow's cited findings.（僅當使用者明說「用官方原版跑」時改 `name:"deep-research"`）
 - 平行對照 → start the official paced workflow (`deep-research-paced`) in the background, run this skill's pipeline in the foreground, then present a side-by-side comparison.
+- 遞迴深挖 → invoke `Skill(recursive-research)` with args「<topic> — 以繁體中文輸出」; this skill's pipeline is NOT run.（🔬 trial：若 2026-07-15 review 後該 skill 已移除，本選項與上方第 4 項一併刪除）
 
-**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」= 平行對照。
+**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」= 平行對照；「遞迴挖 / 用 recursive-research 跑」= 遞迴深挖（trial）。
 
 ---
 

@@ -63,9 +63,9 @@ F22 2026-06-15: three batches × 5.4M tokens each silently abstained on `platfor
 2. Parallel WebFetch each landing page — log 302 redirects (follow them), 404s, login walls, suspiciously short renders
 3. Skim each live page — note what's trivially extractable now vs what needs verification / contention work
 
-**🔬 Trial 期增補：perspective sub-scout (2026-07-11 review · storm-perspective-graft)**
+**Perspective sub-scout（可選，題目發散時才跑）**
 
-源自 stanford-oval/storm Perspective-Guided Question Asking 概念，trial 評估能否解「題目沒定義清楚 / scope 過大 / 結果發散」痛點。跟上面 URL pool scout 並行跑、不互斥。
+源自 stanford-oval/storm Perspective-Guided Question Asking 概念，治「題目沒定義清楚 / scope 過大 / 結果發散」痛點。跟上面 URL pool scout 並行跑、不互斥。事實盤點 / roster 批次類題目直接跳過。
 
 Steps（main session 跑，scout 階段同時做）:
 
@@ -76,7 +76,7 @@ Steps（main session 跑，scout 階段同時做）:
 
 低信心 fallback：找不到 ≥3 對位 artifact → 標「⚠️ 低信心 perspective set」並 fallback 讓 LLM 自己想；user 可選 skip。
 
-Promote/Kill 條件詳見 `~/Desktop/projects/.claude/trials/active.md` storm-perspective-graft entry。
+觀察狀態（2026-07-25）：5 週零完整 scout run、母場景本身閒置，機制未受考驗；轉事件驅動觀察，backstop 對帳日 2026-08-24（見 `~/Desktop/projects/.claude/trials/active.md` storm-perspective-graft entry）。
 
 **Gate B (after scout, decide before Engine Routing):**
 
@@ -93,20 +93,18 @@ Promote/Kill 條件詳見 `~/Desktop/projects/.claude/trials/active.md` storm-pe
 
 (Reached this section only after Pre-scout Gate passed and Gate B chose "narrow" or "full". If Gate B chose "skip", this whole section is bypassed.)
 
-After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. List the four options as inline text in the response, then end the turn and wait for the answer — single-select (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
+After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. List the three options as inline text in the response, then end the turn and wait for the answer — single-select (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
 2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比原版慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。若要不限流的原版（非 Opus 端點較快；但 **Opus 端點會撞 burst 限流、findings 拿半套**）→ 使用者明說「用官方原版跑」才改走 `Workflow({name:"deep-research"})`。
 3. **平行對照** — 背景起官方 workflow（限流版 `deep-research-paced`）+ 前景同時跑本 skill 管線，兩邊都回來後並排對照發現與品質差異。花雙倍 token，適合重要題目或評估期。
-4. **遞迴深挖（🔬 trial 至 2026-07-15）** — invoke `Skill(recursive-research)`：單線遞迴路線，每輪挑覆蓋最薄的子題往下鑽、來源自動分級、每輪磁碟 checkpoint 可跨 session `--resume`。與 1-3 的並行展開架構相反，適合「一個題目要鑽很深」而非「一個題目要鋪很廣」。⚠️ SKILL.md 本文是西班牙文，invoke 時 args 必須明寫「以繁體中文輸出」。trial 期間選了它請順手記錄體感（active.md recursive-research entry），review 時決定去留。
 
 **Routing after the answer:**
 - 本 skill 管線 → proceed to Mode Selection and the 8-phase workflow below.
 - 官方 workflow（限流版）→ invoke `Workflow({name:"deep-research-paced"})`; this skill's pipeline is NOT run. Relay the workflow's cited findings.（僅當使用者明說「用官方原版跑」時改 `name:"deep-research"`）
 - 平行對照 → start the official paced workflow (`deep-research-paced`) in the background, run this skill's pipeline in the foreground, then present a side-by-side comparison.
-- 遞迴深挖 → invoke `Skill(recursive-research)` with args「<topic> — 以繁體中文輸出」; this skill's pipeline is NOT run.（🔬 trial：若 2026-07-15 review 後該 skill 已移除，本選項與上方第 4 項一併刪除）
 
-**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」= 平行對照；「遞迴挖 / 用 recursive-research 跑」= 遞迴深挖（trial）。
+**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」= 平行對照。
 
 ---
 
@@ -146,6 +144,21 @@ After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the 
 - `python scripts/validate_report.py --report [path]`
 - `python scripts/verify_citations.py --report [path]`
 - `python scripts/md_to_html.py [markdown_path]`
+
+**深度規則（hop 預算）：**
+
+hop = 沿單一線索的延伸層數（種子來源內的引用 → 下一層來源 = 1 hop）。各檔位預算：
+
+| 檔位 | hop 預算 |
+|---|---|
+| quick | 1 |
+| standard | 2 |
+| deep | 3 |
+| ultradeep | 5 |
+
+- 超出預算的線索**不追**，改記入報告尾端「未追的線索」清單：線索是什麼 + 為何在預算外（第幾 hop / 哪個檔位）
+- 「未追的線索」清單為空時明寫「無」——沉默等於宣稱追完了，no silent caps
+- 預算是深度上限、不是廣度上限；同一層平行多條線索不算 hop
 
 ---
 

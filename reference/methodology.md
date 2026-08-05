@@ -95,7 +95,7 @@ Use the returned year for all date-filtered queries and recency checks. Do NOT a
 
 **Step 2: Spawn parallel deep-dive agents**
 
-Use Task tool with general-purpose agents (3-5 agents) for:
+Use Task tool with routed-judge agents (3-5 agents) for:
 - Academic paper analysis (PDFs, detailed extraction)
 - Documentation deep dives (technical specs, API docs)
 - Repository analysis (code examples, implementations)
@@ -125,9 +125,9 @@ Evidence must not live only in model context — it must be persisted to `eviden
 - Bash: search "quantum computing commercial applications 2026" -m news --json -c 10
 - Bash: search "quantum computing vs classical comparison" --json -c 10
 - Bash: search "quantum error correction research" -m academic --json -c 10
-- Task(subagent_type="general-purpose", description="Analyze quantum computing papers", prompt="Deep dive into quantum computing academic papers from [CURRENT_YEAR], extract key findings and methodologies")
-- Task(subagent_type="general-purpose", description="Industry analysis", prompt="Analyze quantum computing industry reports and market data, identify commercial applications")
-- Task(subagent_type="general-purpose", description="Technical challenges", prompt="Extract technical limitations and challenges from quantum computing research")
+- Task(subagent_type="routed-judge", description="Analyze quantum computing papers", prompt="Deep dive into quantum computing academic papers from [CURRENT_YEAR], extract key findings and methodologies")
+- Task(subagent_type="routed-judge", description="Industry analysis", prompt="Analyze quantum computing industry reports and market data, identify commercial applications")
+- Task(subagent_type="routed-judge", description="Technical challenges", prompt="Extract technical limitations and challenges from quantum computing research")
 ```
 
 **Example parallel execution (using Exa MCP - if available):**
@@ -137,7 +137,7 @@ Evidence must not live only in model context — it must be persisted to `eviden
 - mcp__Exa__exa_search(query="quantum computing limitations", type="keyword", num_results=10)
 - mcp__Exa__exa_search(query="quantum computing commercial", type="auto", num_results=10, start_published_date="[use current year from Step 0]")
 - mcp__Exa__exa_search(query="quantum error correction", type="neural", num_results=10, include_domains=["arxiv.org"])
-- Task(subagent_type="general-purpose", description="Academic analysis", prompt="Analyze quantum computing academic papers")
+- Task(subagent_type="routed-judge", description="Academic analysis", prompt="Analyze quantum computing academic papers")
 ```
 
 **Step 3: Collect and organize results**

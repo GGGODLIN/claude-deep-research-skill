@@ -73,7 +73,7 @@ Use Task tool:
 
 ```
 Task(
-  subagent_type="general-purpose",
+  subagent_type="routed-judge",
   description="Continue deep-research report generation",
   prompt="""
 CONTINUATION TASK: Continue existing deep-research report.

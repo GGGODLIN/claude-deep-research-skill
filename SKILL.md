@@ -1,6 +1,9 @@
 ---
 name: deep-research
 description: 多源驗證 + citation 追蹤 + 結構化研究報告的深度研究 skill。觸發：「深度研究 / 深入研究 / 完整分析 X」「研究報告」「比較 X 跟 Y / X vs Y / X 怎麼選」「X 的現況 / 趨勢 / landscape」；英文 deep research / comprehensive analysis / research report。不要用在：簡單查詢、debug、一兩次搜尋就答得出的事實題（交 research-before-answer）。
+upstream: 199-biotechnologies/claude-deep-research-skill
+upstream-path: SKILL.md
+upstream-pinned: f2f2c0f
 ---
 
 # Deep Research

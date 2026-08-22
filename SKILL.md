@@ -29,8 +29,9 @@ Pre-scout Gate (see "Pre-scout Gate" section below)
 
 Engine Routing (ASK EVERY TIME -- see "Engine Routing" section below)
 +-- 本 skill 管線 --> Mode Selection (below)
-+-- 官方 workflow（限流版）--> Workflow({name:"deep-research-paced"}); skill 不往下
-+-- 平行對照 --> 背景官方 workflow（限流版）+ 前景本 skill 管線
++-- 官方 workflow（限流版）--> Workflow({name:"deep-research-paced"}); 只勾它時 skill 不往下
++-- ChatGPT DR 委外 --> see "ChatGPT Deep Research 委外" section
++-- 多選: 勾幾個跑幾個並行 (1+2 = 舊「平行對照」)
 
 Mode Selection (only when "本 skill 管線" is chosen)
 +-- Initial exploration --> quick (3 phases, 2-5 min)
@@ -96,18 +97,39 @@ Steps（main session 跑，scout 階段同時做）:
 
 (Reached this section only after Pre-scout Gate passed and Gate B chose "narrow" or "full". If Gate B chose "skip", this whole section is bypassed.)
 
-After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engine to run BEFORE anything else. List the three options as inline text in the response, then end the turn and wait for the answer — single-select (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
+After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engines to run BEFORE anything else. List the three options as inline text in the response, then end the turn and wait for the answer — **多選，勾一至多個** (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
 2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比原版慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。若要不限流的原版（非 Opus 端點較快；但 **Opus 端點會撞 burst 限流、findings 拿半套**）→ 使用者明說「用官方原版跑」才改走 `Workflow({name:"deep-research"})`。
-3. **平行對照** — 背景起官方 workflow（限流版 `deep-research-paced`）+ 前景同時跑本 skill 管線，兩邊都回來後並排對照發現與品質差異。花雙倍 token，適合重要題目或評估期。
+3. **ChatGPT Deep Research 委外** — 丟一份給 ChatGPT 網頁版 Deep Research（吃 ChatGPT 訂閱額度、OpenAI 端非同步跑 10-30 min、零 CC token）。執行程序見下方「ChatGPT Deep Research 委外」段。
 
-**Routing after the answer:**
-- 本 skill 管線 → proceed to Mode Selection and the 8-phase workflow below.
-- 官方 workflow（限流版）→ invoke `Workflow({name:"deep-research-paced"})`; this skill's pipeline is NOT run. Relay the workflow's cited findings.（僅當使用者明說「用官方原版跑」時改 `name:"deep-research"`）
-- 平行對照 → start the official paced workflow (`deep-research-paced`) in the background, run this skill's pipeline in the foreground, then present a side-by-side comparison.
+**多選規則**：勾幾個跑幾個並行。1+2 同勾 = 背景起 workflow、前景跑本 skill 管線，都回來後並排對照發現與品質差異（花雙倍 token，適合重要題目或評估期）。只勾 3 = 純委外：射出後等收割，報告標「未經本地 verify」，main session 只抽驗要引用的關鍵 claim，不跑完整管線。
 
-**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」= 平行對照。
+**Routing after the answer（照勾選集合執行）:**
+- 含 3 → 先跑「ChatGPT Deep Research 委外」步驟 1 射出，再啟動其餘勾選項。
+- 含 1 → proceed to Mode Selection and the 8-phase workflow below.
+- 含 2 → invoke `Workflow({name:"deep-research-paced"})`（僅當使用者明說「用官方原版跑」時改 `name:"deep-research"`）。只勾 2 而無 1 → this skill's pipeline is NOT run; relay the workflow's cited findings.
+
+**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」/「兩個都跑」= 勾 1+2；「順便丟 GPT DR」= 加勾 3。引擎被明示點名而跳過問句時，選項 3 也不另問，使用者明說才加。
+
+---
+
+## ChatGPT Deep Research 委外（選項 3 的執行步驟）
+
+前提：OpenCLI 已裝且 bridge 活著（用法與紅線見 memory [[opencli-chatgpt-web-dispatch-2026-08-16]]）。產出定位是**一份待驗素材**，不繞過任何 engine 的 verify——ChatGPT 端 citation 品質未知，帶 citation ≠ 已驗。
+
+1. **射出**（engine 選定後、主線開跑前）：
+   ```bash
+   opencli chatgpt ask "<refined research question>" --new --deep-research --wait false --window background -f json
+   ```
+   記下回傳 `conversationId`，並把它複誦在下一則給使用者的訊息裡（長跑 compact 後 context 可能丟失，訊息裡的 ID 是救援錨點）。指令失敗或 `opencli doctor` 不過 → 告知使用者、放棄本輪疊加，主線照常，不阻塞；只勾 3 時無主線可退，直接回報失敗、結束回合等指示。做完判準：conversationId 已出現在給使用者的訊息中，或已明講放棄／失敗。
+2. **主線照常跑**所選 engine，不等委外。
+3. **收割**（主線進 TRIANGULATE / synthesis 之前；只勾 3 時收割即主線）：
+   ```bash
+   opencli chatgpt deep-research-result <conversationId> --wait true --timeout 300 --window background -f md
+   ```
+   DR 常跑 10-30 min，首發超時是常態：每 5 分鐘重收一次、最多 6 次；輸出 `status` 欄非完成態 → 視同未完，不採用半成品文字。6 次仍未完 → 報告註明「委外未及時完成、未採用」。做完判準：拿到 status 完成的報告全文，或已註明未採用。
+4. **併入**：素材標註來源「ChatGPT Deep Research（未經本地 verify）」餵進 synthesis；要引進最終報告的 claim 一律過所選 engine 的 verify 流程（本 skill claim verify 或 workflow 3-vote）；只勾 3 無 engine 時照多選規則的抽驗辦法——只抽驗要引用的關鍵 claim，不啟動完整 verify。做完判準：最終報告 Methodology/Sources 段列出委外素材「採用哪些／驗過哪些／棄掉哪些」三項，各有內容或明寫「無」。
 
 ---
 

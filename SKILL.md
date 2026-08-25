@@ -67,20 +67,7 @@ F22 2026-06-15: three batches × 5.4M tokens each silently abstained on `platfor
 2. Parallel WebFetch each landing page — log 302 redirects (follow them), 404s, login walls, suspiciously short renders
 3. Skim each live page — note what's trivially extractable now vs what needs verification / contention work
 
-**Perspective sub-scout（可選，題目發散時才跑）**
-
-源自 stanford-oval/storm Perspective-Guided Question Asking 概念，治「題目沒定義清楚 / scope 過大 / 結果發散」痛點。跟上面 URL pool scout 並行跑、不互斥。事實盤點 / roster 批次類題目直接跳過。
-
-Steps（main session 跑，scout 階段同時做）:
-
-1. 找 3-5 個對位 artifact（GitHub awesome list / 既有 landscape post / 同類 wiki entry / Sequoia/Latent Space 之類 market map）
-2. 觀察這幾篇共用哪些 perspective 軸（產品形態 / autonomy 軸 / 商業模式 / 對手 / 目標用戶 之類）
-3. 抽 4-7 個 perspective set，給 user 點頭再進 Engine Routing
-4. Perspective set 作 Engine routing args 的補強——`deep-research-paced` 的 angle decomposition 依 perspective set 分軸
-
-低信心 fallback：找不到 ≥3 對位 artifact → 標「⚠️ 低信心 perspective set」並 fallback 讓 LLM 自己想；user 可選 skip。
-
-觀察狀態（2026-07-25）：5 週零完整 scout run、母場景本身閒置，機制未受考驗；轉事件驅動觀察，backstop 對帳日 2026-08-24（見 `~/Desktop/projects/.claude/trials/active.md` storm-perspective-graft entry）。
+**Perspective sub-scout（可選，Gate 判為發散題才跑）**：與 URL pool scout 並行，找 3–5 篇同題分析抽 4–7 個 perspective 軸、作 Engine routing 的分軸補強；判準、步驟、回傳形狀見 `~/.claude/references/perspective-sub-scout.md`。事實盤點 / roster 批次類直接跳過。
 
 **Gate B (after scout, decide before Engine Routing):**
 

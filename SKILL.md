@@ -34,10 +34,10 @@ Engine Routing (ASK EVERY TIME -- see "Engine Routing" section below)
 +-- 多選: 勾幾個跑幾個並行 (1+2 = 舊「平行對照」)
 
 Mode Selection (only when "本 skill 管線" is chosen)
-+-- Initial exploration --> quick (3 phases, 2-5 min)
-+-- Standard research --> standard (6 phases, 5-10 min) [DEFAULT]
-+-- Critical decision --> deep (8 phases, 10-20 min)
-+-- Comprehensive review --> ultradeep (8+ phases, 20-45 min)
++-- Initial exploration --> quick (3 phases)
++-- Standard research --> standard (6 phases) [DEFAULT]
++-- Critical decision --> deep (8 phases)
++-- Comprehensive review --> ultradeep (8+ phases)
 ```
 
 **Default assumptions:** Technical query = technical audience. Comparison = balanced perspective. Trend = recent 1-2 years.
@@ -177,9 +177,9 @@ hop = 沿單一線索的延伸層數（種子來源內的引用 → 下一層來
 ## Output Contract
 
 **Required sections:**
-- Executive Summary (200-400 words)
+- Executive Summary (one screen; `validate_report.py` warns above 400 words)
 - Introduction (scope, methodology, assumptions)
-- Main Analysis (4-8 findings, 600-2,000 words each, cited)
+- Main Analysis (4-8 findings, each developed with cited evidence rather than summarized)
 - Synthesis & Insights (patterns, implications)
 - Limitations & Caveats
 - Recommendations
@@ -200,7 +200,7 @@ hop = 沿單一線索的延伸層數（種子來源內的引用 → 下一層來
 - All factual claims cited immediately [N] with evidence backing in `evidence.jsonl`
 - Claim-support verification mandatory: no unsupported factual claims pass delivery
 - No placeholders, no fabricated citations
-- Prose-first (>=80%), bullets sparingly
+- Use flowing prose for analysis and argument; use lists only where the content is genuinely enumerable (product names, rosters, ordered steps)
 
 ---
 

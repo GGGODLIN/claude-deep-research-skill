@@ -103,7 +103,11 @@ After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the 
 
 ## ChatGPT Deep Research 委外（選項 3 的執行步驟）
 
-前提：OpenCLI 已裝且 bridge 活著（用法與紅線見 memory [[opencli-chatgpt-web-dispatch-2026-08-16]]）。產出定位是**一份待驗素材**，不繞過任何 engine 的 verify——ChatGPT 端 citation 品質未知，帶 citation ≠ 已驗。
+前提：OpenCLI 已裝且 bridge 活著（用法與紅線見 memory [[opencli-chatgpt-web-dispatch-2026-08-16]]）。
+
+⚠️ **2026-09-05 狀態：使用者回報 `--deep-research` 已壞一段時間，壞的具體形狀未確認**（查無對應 upstream issue；同期已實測確認 ChatGPT 前端改版打死 `model` 與 `history` 兩個命令，可用性分界表見該 memory）。在確認修復前，選項 3 視為高失敗率：Step 1 失敗照下方既有 fallback 走、不阻塞主線；使用者主動點名選項 3 時先告知這個狀態，不要讓他以為是可靠疊加。
+
+產出定位是**一份待驗素材**，不繞過任何 engine 的 verify——ChatGPT 端 citation 品質未知，帶 citation ≠ 已驗。
 
 1. **射出**（engine 選定後、主線開跑前）：
    ```bash

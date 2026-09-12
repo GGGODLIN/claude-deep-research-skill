@@ -31,6 +31,7 @@ Engine Routing (ASK EVERY TIME -- see "Engine Routing" section below)
 +-- 本 skill 管線 --> Mode Selection (below)
 +-- 官方 workflow（限流版）--> Workflow({name:"deep-research-paced"}); 只勾它時 skill 不往下
 +-- ChatGPT DR 委外 --> see "ChatGPT Deep Research 委外" section
++-- hyperresearch（試用中）--> 僅在 ~/Desktop/projects/hyperresearch-trial/ 內可用；不在該目錄就不列這個選項
 +-- 多選: 勾幾個跑幾個並行 (1+2 = 舊「平行對照」)
 
 Mode Selection (only when "本 skill 管線" is chosen)
@@ -87,17 +88,19 @@ F22 2026-06-15: three batches × 5.4M tokens each silently abstained on `platfor
 After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the user which engines to run BEFORE anything else. List the three options as inline text in the response, then end the turn and wait for the answer — **多選，勾一至多個** (`AskUserQuestion` is globally denied since 2026-07-05; see memory `feedback_no_askuserquestion_inline_options_instead`). 繁中 labels shown to the user:
 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
-2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比原版慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。若要不限流的原版（非 Opus 端點較快；但 **Opus 端點會撞 burst 限流、findings 拿半套**）→ 使用者明說「用官方原版跑」才改走 `Workflow({name:"deep-research"})`。
+2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比不限流的跑法慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。
 3. **ChatGPT Deep Research 委外** — 丟一份給 ChatGPT 網頁版 Deep Research（吃 ChatGPT 訂閱額度、OpenAI 端非同步跑 10-30 min、零 CC token）。執行程序見下方「ChatGPT Deep Research 委外」段。
+4. **hyperresearch（🔬 試用中，review 2026-09-19）** — 外部 16 步 pipeline：廣度掃 → 矛盾圖 → 深挖 → 三份平行草稿 → 四個對抗 critic → 逐條查引用綁定 → 潤稿，讀過的來源進本地可搜尋 vault（下次先查 vault 再上網）。full tier 約 1.5–2.5 小時。**⚠️ 只在 `~/Desktop/projects/hyperresearch-trial/` 目錄內可用**（刻意做每專案安裝、全域常駐成本 0）——session 不在該目錄就**不要列出這個選項**，也不要建議使用者 cd 過去，除非他自己提。⚠️ 裝好後未做過端到端實跑，首次選它當未實證路徑：失敗就退回選項 1 或 2、不阻塞主線。⚠️ 它的 benchmark 宣稱是作者自己的投影非第三方量測。背景、安全檢查與 review 對帳項見 `~/Desktop/projects/.claude/trials/active/hyperresearch-2026-09-12.md`。
 
 **多選規則**：勾幾個跑幾個並行。1+2 同勾 = 背景起 workflow、前景跑本 skill 管線，都回來後並排對照發現與品質差異（花雙倍 token，適合重要題目或評估期）。只勾 3 = 純委外：射出後等收割，報告標「未經本地 verify」，main session 只抽驗要引用的關鍵 claim，不跑完整管線。
 
 **Routing after the answer（照勾選集合執行）:**
 - 含 3 → 先跑「ChatGPT Deep Research 委外」步驟 1 射出，再啟動其餘勾選項。
 - 含 1 → proceed to Mode Selection and the 8-phase workflow below.
-- 含 2 → invoke `Workflow({name:"deep-research-paced"})`（僅當使用者明說「用官方原版跑」時改 `name:"deep-research"`）。只勾 2 而無 1 → this skill's pipeline is NOT run; relay the workflow's cited findings.
+- 含 2 → invoke `Workflow({name:"deep-research-paced"})`。只勾 2 而無 1 → this skill's pipeline is NOT run; relay the workflow's cited findings.
+- 含 4 → 在 `~/Desktop/projects/hyperresearch-trial/` 內 invoke `Skill({skill:"hyperresearch"})`（該目錄的 per-project skill，非全域）。只勾 4 而無 1 → 本 skill 管線不跑，轉述它的報告並註明是試用引擎的產出。跑完把「耗時 / 有沒有跑完 / 品質如何」記進該 trial 的 detail 檔，review 日要用。
 
-**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用官方原版跑」= 原版 `deep-research`（⚠️ Opus 端點會撞 burst 限流、拿半套）；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」/「兩個都跑」= 勾 1+2；「順便丟 GPT DR」= 加勾 3。引擎被明示點名而跳過問句時，選項 3 也不另問，使用者明說才加。
+**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」/「兩個都跑」= 勾 1+2；「順便丟 GPT DR」= 加勾 3；「用 hyperresearch 跑」= 勾 4（不在 trial 目錄就直說不可用、問要不要 cd 過去）。引擎被明示點名而跳過問句時，選項 3 與 4 都不另問，使用者明說才加。
 
 ---
 
@@ -105,7 +108,15 @@ After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the 
 
 前提：OpenCLI 已裝且 bridge 活著（用法與紅線見 memory [[opencli-chatgpt-web-dispatch-2026-08-16]]）。
 
-⚠️ **2026-09-05 狀態：使用者回報 `--deep-research` 已壞一段時間，壞的具體形狀未確認**（查無對應 upstream issue；同期已實測確認 ChatGPT 前端改版打死 `model` 與 `history` 兩個命令，可用性分界表見該 memory）。在確認修復前，選項 3 視為高失敗率：Step 1 失敗照下方既有 fallback 走、不阻塞主線；使用者主動點名選項 3 時先告知這個狀態，不要讓他以為是可靠疊加。
+**`--deep-research` 狀態：本機已修（2026-09-05 hand-patch），但這個修是脆的。** 根因＝adapter 的 `CHATGPT_TOOL_OPTIONS` 只帶簡體與英文 label，zh-TW 介面用的是「深入研究」不是「深度研究」，所以從來沒支援過繁體介面。修法＝兩個 label 陣列各 prepend 繁體詞。
+
+2026-09-12 複驗：本機 `@jackwener/opencli@1.8.7` 的 `clis/chatgpt/utils.js:77-78` 確認已含 `'深入研究'` 與 `'網頁搜尋'`（mtime 2026-09-05 12:35）；上游 PR [#2463](https://github.com/jackwener/OpenCLI/pull/2463) 仍 `state: open` / `merged: false`。
+
+⚠️ **脆在哪**：修是直接改 node_modules 裡的檔，任何 `npm i -g @jackwener/opencli` / update / nvm 換 node 版本都會蓋掉它。選項 3 報 `Could not find ... tool` 之類的錯 → 先 `grep -n "深入研究" $(npm root -g)/@jackwener/opencli/clis/chatgpt/utils.js`，沒命中就是被蓋回去了，重新 prepend 兩個繁體詞即可，不要當成新 bug 去查。
+
+⚠️ 未驗：修好後沒做過端到端實跑（PR 只跑了 `utils.test.js` 單元測試）。首次再用選項 3 時當作未實證路徑，Step 1 失敗照下方既有 fallback 走、不阻塞主線。
+
+⚠️ 不受這個修影響的既有限制：`model` 與 `history` 仍壞（ChatGPT 前端改 Radix + Popover，屬架構級，upstream issue [#2462](https://github.com/jackwener/OpenCLI/issues/2462) 未修）→ 無法指定或查詢檔位，`ask` 只能沿用帳號上次留的檔位。可用性分界表見該 memory。
 
 產出定位是**一份待驗素材**，不繞過任何 engine 的 verify——ChatGPT 端 citation 品質未知，帶 citation ≠ 已驗。
 

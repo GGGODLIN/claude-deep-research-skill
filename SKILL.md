@@ -31,7 +31,7 @@ Engine Routing (ASK EVERY TIME -- see "Engine Routing" section below)
 +-- 本 skill 管線 --> Mode Selection (below)
 +-- 官方 workflow（限流版）--> Workflow({name:"deep-research-paced"}); 只勾它時 skill 不往下
 +-- ChatGPT DR 委外 --> see "ChatGPT Deep Research 委外" section
-+-- hyperresearch（試用中）--> 僅在 ~/Desktop/projects/hyperresearch-trial/ 內可用；不在該目錄就不列這個選項
++-- hyperresearch（試用中）--> 一律列出；跑它要在 ~/Desktop/projects/hyperresearch-trial/ 開 session，列選項時講明
 +-- 多選: 勾幾個跑幾個並行 (1+2 = 舊「平行對照」)
 
 Mode Selection (only when "本 skill 管線" is chosen)
@@ -90,7 +90,11 @@ After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the 
 1. **本 skill 管線** — main-session structured pipeline: citation tracking, `evidence.jsonl`/`claims.jsonl` persistence, McKinsey HTML/PDF, 繁中輸出。慢但可追溯、可交付。
 2. **官方 workflow（限流版）** — call `Workflow({name:"deep-research-paced", args:"<topic> — 請以繁體中文輸出報告"})`。對齊官方品質（3-vote、25 claims、繼承 session model、對抗式驗證），但 verify 分批跑（peak 並發 6）避開 Opus 端點的 burst 限流：完整、0 撞限，惟比不限流的跑法慢約 2.5x。⚠️ args 必須註明繁中，否則預設吐英文。
 3. **ChatGPT Deep Research 委外** — 丟一份給 ChatGPT 網頁版 Deep Research（吃 ChatGPT 訂閱額度、OpenAI 端非同步跑 10-30 min、零 CC token）。執行程序見下方「ChatGPT Deep Research 委外」段。
-4. **hyperresearch（🔬 試用中，review 2026-09-19）** — 外部 16 步 pipeline：廣度掃 → 矛盾圖 → 深挖 → 三份平行草稿 → 四個對抗 critic → 逐條查引用綁定 → 潤稿，讀過的來源進本地可搜尋 vault（下次先查 vault 再上網）。full tier 約 1.5–2.5 小時。**⚠️ 只在 `~/Desktop/projects/hyperresearch-trial/` 目錄內可用**（刻意做每專案安裝、全域常駐成本 0）——session 不在該目錄就**不要列出這個選項**，也不要建議使用者 cd 過去，除非他自己提。⚠️ 裝好後未做過端到端實跑，首次選它當未實證路徑：失敗就退回選項 1 或 2、不阻塞主線。⚠️ 它的 benchmark 宣稱是作者自己的投影非第三方量測。背景、安全檢查與 review 對帳項見 `~/Desktop/projects/.claude/trials/active/hyperresearch-2026-09-12.md`。
+4. **hyperresearch（🔬 試用中，review 2026-09-19）** — 外部 16 步 pipeline：廣度掃 → 矛盾圖 → 深挖 → 三份平行草稿 → 四個對抗 critic → 逐條查引用綁定 → 潤稿，讀過的來源進本地可搜尋 vault（下次先查 vault 再上網）。full tier 約 1.5–2.5 小時。**這個選項無論 cwd 在哪都要列出來**——它是試用中的引擎，不提醒就等於沒接（使用者 2026-09-12 明確要求：「我下次提到深度研究，你不提醒我怎麼可能想得起來」）。
+
+⚠️ **但它只跑得動在 `~/Desktop/projects/hyperresearch-trial/` 裡**（刻意做每專案安裝換全域常駐成本 0）。Claude Code 的 project skill 不會因為 cd 就熱載入，所以選了它＝**要在那個目錄開一個新 session**。列選項時就把這句講明白，別讓使用者勾了才發現跑不了。cwd 已在該目錄 → 直接可跑，不必提這段。
+
+⚠️ 裝好後未做過端到端實跑，首次選它當未實證路徑：失敗就退回選項 1 或 2、不阻塞主線。⚠️ 它的 benchmark 宣稱是作者自己的投影非第三方量測。背景、安全檢查與 review 對帳項見 `~/Desktop/projects/.claude/trials/active/hyperresearch-2026-09-12.md`。
 
 **多選規則**：勾幾個跑幾個並行。1+2 同勾 = 背景起 workflow、前景跑本 skill 管線，都回來後並排對照發現與品質差異（花雙倍 token，適合重要題目或評估期）。只勾 3 = 純委外：射出後等收割，報告標「未經本地 verify」，main session 只抽驗要引用的關鍵 claim，不跑完整管線。
 
@@ -100,7 +104,7 @@ After the STOP gate passes (this genuinely needs deep research), ALWAYS ask the 
 - 含 2 → invoke `Workflow({name:"deep-research-paced"})`。只勾 2 而無 1 → this skill's pipeline is NOT run; relay the workflow's cited findings.
 - 含 4 → 在 `~/Desktop/projects/hyperresearch-trial/` 內 invoke `Skill({skill:"hyperresearch"})`（該目錄的 per-project skill，非全域）。只勾 4 而無 1 → 本 skill 管線不跑，轉述它的報告並註明是試用引擎的產出。跑完把「耗時 / 有沒有跑完 / 品質如何」記進該 trial 的 detail 檔，review 日要用。
 
-**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」/「兩個都跑」= 勾 1+2；「順便丟 GPT DR」= 加勾 3；「用 hyperresearch 跑」= 勾 4（不在 trial 目錄就直說不可用、問要不要 cd 過去）。引擎被明示點名而跳過問句時，選項 3 與 4 都不另問，使用者明說才加。
+**Only exception to asking:** the current request already names an engine explicitly — honor it directly without re-asking. 關鍵字對應：「用官方 workflow 跑」/「用限流版跑」= `deep-research-paced`；「用 skill 出 PDF 報告」= 本 skill 管線；「平行跑」/「兩個都跑」= 勾 1+2；「順便丟 GPT DR」= 加勾 3；「用 hyperresearch 跑」= 勾 4（不在 trial 目錄就說明要在 `~/Desktop/projects/hyperresearch-trial/` 開 session，不要只回「不可用」）。引擎被明示點名而跳過問句時，選項 3 與 4 都不另問，使用者明說才加。
 
 ---
 
